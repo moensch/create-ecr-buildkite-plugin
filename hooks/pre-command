@@ -11,6 +11,13 @@ get_repository_arn() {
   repository_arn=$(aws ecr describe-repositories --repository-names "${repository_name}" --region "${region}" | jq '.repositories[0].repositoryArn' -r)
 }
 
+get_repository_uri() {
+  local repository_name="${1}"
+  local region="${2}"
+
+  repository_uri=$(aws ecr describe-repositories --repository-names "${repository_name}" --region "${region}" | jq '.repositories[0].repositoryUri' -r)
+}
+
 ecr_exists() {
   local repository_name="${1}"
   local region="${2}"
@@ -113,3 +120,9 @@ fi
 repository_name="${BUILDKITE_PLUGIN_CREATE_ECR_NAME}"
 get_regions
 upsert_to_regional_ecr "${repository_name}" "${regions[@]}"
+for region in "${regions[@]}"; do
+  get_repository_uri "${repository_name}" "${region}"
+  var_name="CREATE_ECR_REPOSITORY_URI_${region}"
+  printf -v $var_name $repository_uri
+  export $var_name
+done
